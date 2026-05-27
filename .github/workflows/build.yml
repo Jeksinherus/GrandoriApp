@@ -1,4 +1,4 @@
-name: Build Grandoria APK
+name: Build Signed Grandoria APK
 
 on:
   workflow_dispatch:
@@ -13,9 +13,6 @@ jobs:
       - name: Unzip project
         run: unzip -q GrandoriaApp_Fixed_GitHubActions.zip
 
-      - name: Show files
-        run: find . -maxdepth 4 -type f | head -100
-
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
@@ -25,15 +22,23 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Build APK
+      - name: Find project
         run: |
           PROJECT_DIR=$(find . -name "settings.gradle" -o -name "settings.gradle.kts" | head -1 | xargs dirname)
-          echo "Project dir: $PROJECT_DIR"
+          echo "PROJECT_DIR=$PROJECT_DIR" >> $GITHUB_ENV
+
+      - name: Build release APK
+        run: |
           cd "$PROJECT_DIR"
-          gradle assembleDebug
+          gradle assembleRelease
+
+      - name: Rename APK
+        run: |
+          mkdir -p output
+          cp "$PROJECT_DIR"/app/build/outputs/apk/release/*.apk output/Grandoria.apk
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Grandoria-debug-apk
-          path: "**/app/build/outputs/apk/debug/*.apk"
+          name: Grandoria-release-apk
+          path: output/Grandoria.apk
